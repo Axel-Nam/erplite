@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP-Lite | Dashboard de Auditoria</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+
+    <header>
+        <h1>ERP-Lite</h1>
+        <span>Modulo de Auditoria de Discrepancias</span>
+    </header>
+
+    <div class="container">
+
+        <!-- TABLA PRINCIPAL DE DISCREPANCIAS -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Tablero de Discrepancias y Faltantes</h2>
+                <span style="font-size: 12px; color: var(--text-secondary);"
+                      th:text="'Ordenado por: ' + ${etiquetaOrdenActual}">Ordenado por: Faltante</span>
+            </div>
+
+            <!-- Filtros de Estado -->
+            <div class="filter-bar">
+                <a th:href="@{/ordenes(estado=${estadoActual}, orden=${ordenActual}, dir=${dirActual})}" 
+                   class="filter-btn" th:classappend="${discFiltroActual == null} ? 'active'">Todos</a>
+                <a th:href="@{/ordenes(estado=${estadoActual}, discFiltro='PENDIENTE', orden=${ordenActual}, dir=${dirActual})}" 
+                   class="filter-btn" th:classappend="${discFiltroActual == 'PENDIENTE'} ? 'active'">Pendientes</a>
+                <a th:href="@{/ordenes(estado=${estadoActual}, discFiltro='REPOSICION_ENCONTRADA', orden=${ordenActual}, dir=${dirActual})}" 
+                   class="filter-btn" th:classappend="${discFiltroActual == 'REPOSICION_ENCONTRADA'} ? 'active'">Reposiciones</a>
+                <a th:href="@{/ordenes(estado=${estadoActual}, discFiltro='NOTA_CREDITO', orden=${ordenActual}, dir=${dirActual})}" 
+                   class="filter-btn" th:classappend="${discFiltroActual == 'NOTA_CREDITO'} ? 'active'">Nota de Crédito</a>
+            </div>
+
+            <!-- Ordenar por -->
+            <form th:action="@{/ordenes}" method="get" class="sort-bar" id="sortForm">
+                <input type="hidden" name="estado" th:if="${estadoActual != null}" th:value="${estadoActual}" />
+                <input type="hidden" name="discFiltro" th:if="${discFiltroActual != null}" th:value="${discFiltroActual}" />
+                <label for="sortOrden">Ordenar por</label>
+                <select id="sortOrden" name="orden">
+                    <option th:each="c : ${criterios}"
+                            th:value="${c.key}"
+                            th:text="${c.value[0]}"
+                            th:attr="data-tipo=${c.value[1]}"
+                            th:selected="${c.key == ordenActual}">Faltante</option>
+                </select>
+                <select id="sortDir" name="dir" th:attr="data-actual=${dirActual}">
+                    <option value="asc" th:selected="${dirActual == 'asc'}">Menor a mayor</option>
+                    <option value="desc" th:selected="${dirActual == 'desc'}">Mayor a menor</option>
+                </select>
+                <noscript><button type="submit" class="btn btn-outline">Aplicar</button></noscript>
+            </form>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Orden</th>
+                            <th>Cliente</th>
+                            <th>Peso (kg)</th>
+                            <th>Prenda Afectada</th>
+                            <th>Despachado</th>
+                            <th>Recibido</th>
+                            <th>Faltante</th>
+                            <th>Estado</th>
+                            <th>Observacion</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(discrepancias)}">
+                            <td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 24px;">
+                                No hay registros que coincidan con el filtro seleccionado.
+                            </td>
+                        </tr>
+                        <tr th:each="disc : ${discrepancias}">
+                            <td th:text="${disc.id}" style="color: var(--text-secondary); font-weight: 500;">1</td>
+                            <td th:text="${'#' + disc.ordenServicio.id}" style="font-weight: 600;">#101</td>
+                            <td th:text="${disc.ordenServicio.cliente.razonSocial}">Hotel Miramar</td>
+                            <td th:text="${#numbers.formatDecimal(disc.ordenServicio.pesoKilos, 1, 2)}">85.00</td>
+                            <td th:text="${disc.prenda.nombre}">Sabana King Size</td>
+                            <td th:text="${disc.cantidadDespachada}">100</td>
+                            <td th:text="${disc.cantidadRecibidaCliente}">95</td>
+                            <td th:text="${disc.diferencia}" style="font-weight: 700; color: #111827;">5</td>
+                            <td>
+                                <span th:text="${disc.tipoResolucion}" th:class="'badge ' + ${disc.tipoResolucion}">PENDIENTE</span>
+                            </td>
+                            <td th:text="${disc.observacion}" style="color: var(--text-secondary); font-size: 12px;">Detalle de recepcion</td>
+                            <td>
+                                <div class="actions-cell" th:if="${disc.tipoResolucion == 'PENDIENTE'}">
+                                    <form th:action="@{/ordenes/discrepancias/{id}/resolver(id=${disc.id})}" method="post">
+                                        <input type="hidden" name="tipoResolucion" value="REPOSICION_ENCONTRADA" />
+                                        <button type="submit" class="btn btn-outline" style="font-size: 11px; padding: 4px 8px;">Parchar</button>
+                                    </form>
+                                    <form th:action="@{/ordenes/discrepancias/{id}/resolver(id=${disc.id})}" method="post">
+                                        <input type="hidden" name="tipoResolucion" value="NOTA_CREDITO" />
+                                        <button type="submit" class="btn btn-dark" style="font-size: 11px; padding: 4px 8px;">Cobrar</button>
+                                    </form>
+                                </div>
+                                <span th:if="${disc.tipoResolucion != 'PENDIENTE'}" style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Resuelto</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FORMULARIO DE REGISTRO -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Registrar Nueva Discrepancia</h2>
+            </div>
+            <form th:action="@{/ordenes/discrepancias/guardar}" th:object="${nuevaDiscrepancia}" method="post" class="grid-form">
+                <div class="form-group">
+                    <label for="ordenInc">Orden Afectada</label>
+                    <select id="ordenInc" th:field="*{ordenServicio.id}" required>
+                        <option value="" disabled selected>Seleccionar orden...</option>
+                        <option th:each="o : ${ordenes}" th:value="${o.id}" th:text="${'#' + o.id + ' — ' + o.cliente.razonSocial}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="prendaInc">Prenda</label>
+                    <select id="prendaInc" th:field="*{prenda.id}" required>
+                        <option value="" disabled selected>Seleccionar prenda...</option>
+                        <option th:each="p : ${prendas}" th:value="${p.id}" th:text="${p.nombre}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="desp">Cant. Despachada</label>
+                    <input type="number" id="desp" th:field="*{cantidadDespachada}" placeholder="0" required />
+                </div>
+                <div class="form-group">
+                    <label for="rec">Cant. Recibida</label>
+                    <input type="number" id="rec" th:field="*{cantidadRecibidaCliente}" placeholder="0" required />
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-dark" style="height: 35px; width: 100%;">Guardar Registro</button>
+                </div>
+                <div class="form-group full-width" style="margin-top: 4px;">
+                    <label for="obs">Observacion / Nota Adicional</label>
+                    <input type="text" id="obs" th:field="*{observacion}" placeholder="Detalle la discrepancia reportada por el cliente..." />
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        // Cambia el texto de la direccion segun el criterio y envia el formulario al cambiar.
+        (function () {
+            var form = document.getElementById('sortForm');
+            var orden = document.getElementById('sortOrden');
+            var dir = document.getElementById('sortDir');
+            if (!form || !orden || !dir) return;
+
+            var textos = {
+                numero: ['Menor a mayor', 'Mayor a menor'],
+                texto:  ['A -> Z', 'Z -> A'],
+                fecha:  ['Mas antiguo primero', 'Mas reciente primero']
+            };
+
+            function actualizarEtiquetas() {
+                var tipo = orden.options[orden.selectedIndex].getAttribute('data-tipo');
+                var t = textos[tipo] || textos.numero;
+                dir.options[0].text = t[0];
+                dir.options[1].text = t[1];
+            }
+
+            actualizarEtiquetas();
+            orden.addEventListener('change', function () { actualizarEtiquetas(); form.submit(); });
+            dir.addEventListener('change', function () { form.submit(); });
+        })();
+    </script>
+
+</body>
+</html>

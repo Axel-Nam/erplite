@@ -1,0 +1,4 @@
+# Copia este archivo como application-local.properties y completa tus datos.
+spring.datasource.url=jdbc:postgresql://localhost:5432/erplite_db
+spring.datasource.username=postgres
+spring.datasource.password=TU_CONTRASEÑA
