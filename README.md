@@ -90,4 +90,4 @@ Estados de una discrepancia: `PENDIENTE` → `REPOSICION_ENCONTRADA` o `NOTA_CRE
 
 ## Autor
 
-Hecho por **TU NOMBRE** — [GitHub](https://github.com/TU_USUARIO)
+Hecho por Axel Torres — [GitHub](https://github.com/Axel-Nam)
